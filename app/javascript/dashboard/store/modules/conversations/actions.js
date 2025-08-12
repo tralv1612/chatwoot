@@ -460,10 +460,12 @@ const actions = {
   },
 
   setConversationFilters({ commit }, data) {
+    localStorage.setItem('appliedConversationFilters', JSON.stringify(data));
     commit(types.SET_CONVERSATION_FILTERS, data);
   },
 
   clearConversationFilters({ commit }) {
+    localStorage.removeItem('appliedConversationFilters');
     commit(types.CLEAR_CONVERSATION_FILTERS);
   },
 

@@ -596,7 +596,9 @@ function loadMoreConversations() {
     const payload = activeFolder.value.query;
     fetchSavedFilteredConversations(payload);
   } else if (hasAppliedFilters.value) {
-    fetchFilteredConversations(appliedFilters.value);
+    const savedFiltersRaw = localStorage.getItem('appliedConversationFilters');
+    const savedFilters = JSON.parse(savedFiltersRaw);
+    fetchFilteredConversations(savedFilters);
   }
 }
 
@@ -810,8 +812,43 @@ provide('deleteConversation', handleDelete);
 watch(activeTeam, () => resetAndFetchData());
 
 watch(
-  computed(() => props.conversationInbox),
-  () => resetAndFetchData()
+  () => route.params.inbox_id,
+  (newInboxId, oldInboxId) => {
+    if (newInboxId && newInboxId !== oldInboxId) {
+      const savedFiltersRaw = localStorage.getItem(
+        'appliedConversationFilters'
+      );
+      if (savedFiltersRaw) {
+        try {
+          const allSavedFilters = JSON.parse(savedFiltersRaw);
+          if (allSavedFilters && allSavedFilters.length > 0) {
+            const filtersWithoutInbox = allSavedFilters.filter(
+              filter => filter.attributeKey !== 'inbox_id'
+            );
+            const newInboxFilter = {
+              attributeKey: 'inbox_id',
+              filterOperator: 'equal_to',
+              values: [newInboxId],
+              queryOperator: 'and',
+              attributeModel: 'standard',
+            };
+            const finalFilters = [...filtersWithoutInbox, newInboxFilter];
+            localStorage.setItem(
+              'appliedConversationFilters',
+              JSON.stringify(finalFilters)
+            );
+            onApplyFilter(finalFilters);
+          }
+        } catch (e) {
+          localStorage.removeItem('appliedConversationFilters');
+        }
+      } else {
+        resetAndFetchData();
+      }
+    } else {
+      resetAndFetchData();
+    }
+  }
 );
 watch(
   computed(() => props.label),
