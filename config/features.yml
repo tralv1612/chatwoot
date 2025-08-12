@@ -17,6 +17,8 @@
   display_name: Facebook Channel
   enabled: true
   help_url: https://chwt.app/hc/fb
+- name: channel_zalo
+  enabled: true
 - name: channel_twitter
   display_name: Twitter Channel
   enabled: true

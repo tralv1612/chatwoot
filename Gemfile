@@ -183,6 +183,8 @@ gem 'ai-agents', '>= 0.2.1'
 
 gem 'shopify_api'
 
+gem "fiddle"
+
 ### Gems required only in specific deployment environments ###
 ##############################################################
 

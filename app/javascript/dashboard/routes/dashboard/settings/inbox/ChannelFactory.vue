@@ -11,9 +11,11 @@ import Line from './channels/Line.vue';
 import Telegram from './channels/Telegram.vue';
 import Instagram from './channels/Instagram.vue';
 import Voice from './channels/Voice.vue';
+import Zalo from './channels/Zalo.vue';
 
 const channelViewList = {
   facebook: Facebook,
+  zalo: Zalo,
   website: Website,
   twitter: Twitter,
   api: Api,
