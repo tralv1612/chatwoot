@@ -37,6 +37,7 @@ export default {
     return {
       isMobile: false,
       campaignsSnoozedTill: undefined,
+      activityTracker: null,
     };
   },
   computed: {
@@ -95,6 +96,17 @@ export default {
     this.$store.dispatch('conversationAttributes/getAttributes');
     this.registerUnreadEvents();
     this.registerCampaignEvents();
+    this.activityTracker = setInterval(() => {
+      // Gọi action 'create' của module 'events' đã được map ở trên
+      // Chúng ta tự định nghĩa một tên sự kiện, ví dụ 'user_is_active'
+      this.create({ name: 'user_is_active' });
+    }, 5000);
+  },
+  beforeUnmount() {
+    // Dọn dẹp interval khi component bị hủy (quan trọng!)
+    if (this.activityTracker) {
+      clearInterval(this.activityTracker);
+    }
   },
   methods: {
     ...mapActions('appConfig', [
@@ -111,6 +123,7 @@ export default {
       'resetCampaign',
     ]),
     ...mapActions('agent', ['fetchAvailableAgents']),
+    ...mapActions('events', ['create']),
     scrollConversationToBottom() {
       const container = this.$el.querySelector('.conversation-wrap');
       container.scrollTop = container.scrollHeight;

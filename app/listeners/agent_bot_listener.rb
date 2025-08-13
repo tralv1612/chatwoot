@@ -50,6 +50,17 @@ class AgentBotListener < BaseListener
     process_webhook_bot_event(inbox.agent_bot, payload)
   end
 
+  def user_is_active(event)
+    contact_inbox = event.data[:contact_inbox]
+    inbox = contact_inbox.inbox
+    return unless connected_agent_bot_exist?(inbox)
+
+    event_name = __method__.to_s
+    payload = contact_inbox.webhook_data.merge(event: event_name)
+    payload[:event_info] = event.data[:event_info]
+    process_webhook_bot_event(inbox.agent_bot, payload)
+  end
+
   private
 
   def connected_agent_bot_exist?(inbox)
