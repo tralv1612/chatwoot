@@ -31,20 +31,22 @@ class Zalo::IncomingMessageService
   end
 
   def url_getprofile
-    'https://openapi.zalo.me/v2.0/oa/getprofile'
+    'https://openapi.zalo.me/v3.0/oa/user/detail'
   end
 
   def first_message_processing
     # try to get user info from followed user first
     update_contact_from_profile
     # request user info for unfollowed user
-    request_user_info if @contact.name == params[:sender][:id]
+    # request_user_info if @contact.name == params[:sender][:id]
   end
 
-  def get_profile(user_id, access_token)
+  def get_profile(user_id, access_token, oa_id)
+    puts "Zalo::IncomingMessageService get_profile user_id: #{user_id}, access_token: #{access_token}, oa_id: #{oa_id}"
     HTTParty.get(
       url_getprofile,
-      headers: { 'access_token' => access_token },
+      headers: { 'access_token' => access_token,
+                 'X-Zalo-OA-ID' => oa_id },
       query: { data: { user_id: user_id }.to_json }
     )
   end
@@ -77,21 +79,29 @@ class Zalo::IncomingMessageService
   end
 
   def update_contact_from_profile
-    response = get_profile(params[:sender][:id], channel.oa_access_token)
-    return unless (response['error']).zero?
+    response = get_profile(params[:sender][:id], channel.oa_access_token, channel.oa_id)
+    puts "Zalo::IncomingMessageService update_contact_from_profile response: #{response.body}"
 
-    @contact.update!(name: response['data']['display_name'])
-    ::Avatar::AvatarFromUrlJob.perform_later(@contact, response['data']['avatars']['240'])
-  end
+    # Kiểm tra request có thành công và Zalo API không báo lỗi
+    return unless response.success? && response.parsed_response['error'].zero?
 
-  def update_contact_from_shared_info
-    phone_number = params[:info][:phone].to_s
-    phone_number.prepend('+') unless phone_number.start_with?('+')
+    # Lấy ra hash 'data' để dễ làm việc
+    data = response.parsed_response['data']
 
-    @contact.update!(
-      name: params[:info][:name],
-      phone_number: phone_number
-    )
+    # Dùng .dig để truy cập an toàn, tránh lỗi nếu key 'display_name' không tồn tại
+    display_name = data.dig('display_name')
+
+    # Vẫn ưu tiên lấy avatar size 240px như code gốc của bạn
+    # .dig('avatars', '240') sẽ an toàn hơn so với data['avatars']['240']
+    avatar_url = data.dig('avatars', '240')
+
+    # Chỉ cập nhật khi lấy được tên thành công
+    return if display_name.blank?
+
+    @contact.update!(name: display_name)
+
+    # Chỉ chạy job cập nhật avatar nếu có URL
+    ::Avatar::AvatarFromUrlJob.perform_later(@contact, avatar_url) if avatar_url.present?
   end
 
   def set_contact
